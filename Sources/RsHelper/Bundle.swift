@@ -1,6 +1,6 @@
 import Foundation
 
-extension Bundle {
+public extension Bundle {
     /// Get full path of a resource file.
     /// 
     /// When bundle resource files in SPM like:
