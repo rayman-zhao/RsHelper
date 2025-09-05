@@ -1,9 +1,75 @@
 import Foundation
 import Testing
 import RsHelper
+#if os(macOS)
+#else
+import FoundationXML
+#endif
 
 @Test
 func bundle() async throws {
     #expect(Bundle.module.path(forResource: "test.txt") != nil)
-    #expect(Bundle.module.path(forResource: "test2.txt") == nil)
+    #expect(Bundle.module.path(forResource: "testx.txt") == nil)
+}
+
+@Test
+func data() async throws {
+    var d = Data()
+    #expect(d.count == 0)
+    
+    d.append(0)
+    #expect(d.count == 8)
+    
+    d.append("Hello World".cString(using: .utf8)!)
+    #expect(d.count == 8 + 12)
+    #expect(d.last == 0)
+}
+
+@Test
+func logger() async throws {
+    log.error("Hello World")
+}
+
+@Test
+func url() async throws {
+    let test_txt = Bundle.module.path(forResource: "test.txt")!
+    let url = URL(filePath: test_txt)
+    #expect(url.fileSize == 0)
+    #expect(url.reachableSibling(named: "test2.txt") != nil)
+    #expect(url.reachableSibling(named: "test2.txt")?.fileSize == 0)
+
+    let url2 = Bundle.module.resourceURL?.reachableChild(named: "test2.txt")
+    #expect(url2 != nil)
+}
+
+@Test
+func xml() async throws {
+    let xml = try XMLDocument(xmlString:
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <books>
+    <book id="1001">
+    <name>The Great Gatsby</name>
+    <author>F. Scott Fitzgerald</author>
+    <price>10.99</price>
+    </book>
+    <book id="1002">
+    <name>To Kill a Mockingbird</name>
+    <author>Harper Lee</author>
+    <price>7.99</price>
+    </book>
+    </books>
+    """)
+    var cnt = 0
+
+    xml.forEachElement { parent, name, attribute, value in
+        print("parent: \(parent)")
+        print("name: \(name)")
+        print("attribute: \(attribute)")
+        print("value: \(value)")
+
+        cnt += 1
+    }
+
+    #expect(cnt == 2)
 }

@@ -12,7 +12,7 @@ public extension Bundle {
     /// SPM and XCode will have different bundle structure on macOS and Windows. This function simplified condition check.
     /// 
     /// - Parameter fileName: A resource file name, like "test.txt"
-    /// - Returns: full file path
+    /// - Returns: Full file path
     func path(forResource fileName: String) -> String? {
         let url = URL(filePath: fileName)
         let ext = url.pathExtension

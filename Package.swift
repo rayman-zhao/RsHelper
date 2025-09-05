@@ -14,9 +14,15 @@ let package = Package(
             targets: ["RsHelper"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+    ],
     targets: [
         .target(
-            name: "RsHelper"
+            name: "RsHelper",
+            dependencies: [
+                .product(name: "Logging", package: "swift-log"),
+            ],
         ),
         .testTarget(
             name: "RsHelperTests",
