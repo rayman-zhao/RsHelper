@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import RsHelper
+import RsHelper
 
 @Test
 func bundle() async throws {
