@@ -16,12 +16,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.15.0"),
     ],
     targets: [
         .target(
             name: "RsHelper",
             dependencies: [
                 .product(name: "Logging", package: "swift-log"),
+                .product(name: "Crypto", package: "swift-crypto", condition: .when(platforms: [.windows])),
             ],
         ),
         .testTarget(

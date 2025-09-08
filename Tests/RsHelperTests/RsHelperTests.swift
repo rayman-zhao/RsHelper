@@ -19,6 +19,7 @@ func data() async throws {
     
     d.append(0)
     #expect(d.count == 8)
+    #expect(d.hashUUID == UUID(uuidString: "7DEA362B-3FAC-5E00-956A-4952A3D4F474"))
     
     d.append("Hello World".cString(using: .utf8)!)
     #expect(d.count == 8 + 12)
