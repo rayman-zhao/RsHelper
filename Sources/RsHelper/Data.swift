@@ -42,4 +42,18 @@ public extension Data {
             bytes[12], bytes[13], bytes[14], bytes[15]
         ))
     }
+
+    /// A boolean value indicating whether the buffer is JPEG data.
+    var isJPEG: Bool {
+        let cnt = self.count
+        return cnt > 4
+            && self[0] == 0xFF && self[1] == 0xD8
+            && self[cnt - 2] == 0xFF && self.last == 0xD9
+
+    }
+
+    /// A boolean value indicating whether the buffer is any kind of image data.
+    var isImage: Bool {
+        return isJPEG
+    }
 }

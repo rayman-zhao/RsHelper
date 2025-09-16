@@ -26,6 +26,17 @@ func data() async throws {
     #expect(d.last == 0)
 }
 
+@Test(arguments: [
+    ("lena.jpg", true),
+    ("lena.png", false),
+    ("test.txt", false),
+])
+func dataTypes(_ fn: String, _ img: Bool) async throws {
+    let url = URL(filePath: try #require(Bundle.module.path(forResource: fn)))
+    let d = try Data(contentsOf: url)
+    #expect(d.isImage == img)
+}
+
 @Test
 func logger() async throws {
     log.error("Hello World")
