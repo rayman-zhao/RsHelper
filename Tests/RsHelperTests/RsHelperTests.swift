@@ -56,22 +56,24 @@ func url() async throws {
 
 @Test
 func xml() async throws {
-    let xml = try XMLDocument(xmlString:
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <books>
-    <book id="1001">
-    <name>The Great Gatsby</name>
-    <author>F. Scott Fitzgerald</author>
-    <price>10.99</price>
-    </book>
-    <book id="1002">
-    <name>To Kill a Mockingbird</name>
-    <author>Harper Lee</author>
-    <price>7.99</price>
-    </book>
-    </books>
-    """)
+    // let xml = try XMLDocument(xmlString:
+    // """
+    // <?xml version="1.0" encoding="UTF-8"?>
+    // <books>
+    // <book id="1001">
+    // <name>The Great Gatsby</name>
+    // <author>F. Scott Fitzgerald</author>
+    // <price>10.99</price>
+    // </book>
+    // <book id="1002">
+    // <name>To Kill a Mockingbird</name>
+    // <author>Harper Lee</author>
+    // <price>7.99</price>
+    // </book>
+    // </books>
+    // """)
+    let data = try Data(contentsOf: URL(filePath: Bundle.module.path(forResource: "utf16le.txt")!))
+    let xml = try XMLDocument(utf16Data: data, options: .documentTidyXML)
     var cnt = 0
 
     xml.forEachElement { parent, name, attribute, value in
