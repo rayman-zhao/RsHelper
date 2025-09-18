@@ -2,6 +2,13 @@ import Foundation
 #if os(macOS)
 #else
 import FoundationXML
+
+class XMLParser {
+    enum ErrorCode : Error {
+        case emptyDocumentError
+    }
+}
+
 #endif
 
 public extension XMLDocument {
@@ -14,10 +21,11 @@ public extension XMLDocument {
     ///   - options: Same as init.
     ///
     /// - Throws: Same as init.
-    convenience init(utf16Data: Data, options: XMLNode.Options) throws {
+    convenience init(utf16Data: Data, options: XMLNode.Options = []) throws {
     #if os(macOS)
         try self.init(data: utf16Data, options: options)
     #else
+        guard !utf16Data.isEmpty else { throw XMLParser.ErrorCode.emptyDocumentError } // Empty data will crash on Windows even with try.
         let codes = utf16Data.withUnsafeBytes { buf in
             return Array(buf.bindMemory(to: UInt16.self))
         }

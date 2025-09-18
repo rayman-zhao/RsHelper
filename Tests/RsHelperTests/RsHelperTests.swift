@@ -86,4 +86,8 @@ func xml() async throws {
     }
 
     #expect(cnt == 2)
+
+    #expect(throws: Error.self) {
+        _ = try XMLDocument(utf16Data: Data())
+    }
 }
