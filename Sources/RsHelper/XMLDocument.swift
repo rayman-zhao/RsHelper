@@ -16,7 +16,7 @@ public extension XMLDocument {
     /// - Throws: Same as init.
     convenience init(utf16Data: Data, options: XMLNode.Options) throws {
     #if os(macOS)
-        try self.init(data: data, options: options)
+        try self.init(data: utf16Data, options: options)
     #else
         let codes = utf16Data.withUnsafeBytes { buf in
             return Array(buf.bindMemory(to: UInt16.self))
