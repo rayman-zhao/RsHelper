@@ -1,7 +1,5 @@
 import Foundation
 
-#if os(Windows)
-/// Windows 平台的目录枚举器修复实现
 fileprivate final class WindowsDirectoryEnumerator: FileManager.DirectoryEnumerator {
     private let baseEnumerator: FileManager.DirectoryEnumerator
     private var skipPaths: Set<String> = []
@@ -29,52 +27,58 @@ fileprivate final class WindowsDirectoryEnumerator: FileManager.DirectoryEnumera
         }
         return nil
     }
-    
+
+    override var fileAttributes: [FileAttributeKey : Any]? {
+        return baseEnumerator.fileAttributes
+    }
+
+    override var directoryAttributes: [FileAttributeKey : Any]? {
+        return baseEnumerator.directoryAttributes
+    }
+
+    override var level: Int {
+        return baseEnumerator.level
+    }
+
     override func skipDescendants() {
         if let url = lastReturnedURL {
             skipPaths.insert(url.path)
         }
     }
-    
-    override var level: Int {
-        return baseEnumerator.level
-    }
 }
-#endif
 
-extension FileManager {
-    /// 修复 Windows 平台 skipDescendants() bug 的目录枚举器
-    /// 在 Windows 平台提供修复版本，其他平台保持原生行为
+public extension FileManager {
+    /// 返回改进的目录枚举器。
     /// 
-    /// - Parameters:
-    ///   - url: 要枚举的目录 URL
-    ///   - keys: 要预取的资源键数组
-    ///   - mask: 目录枚举选项
-    /// - Returns: 目录枚举器，如果目录无法访问则返回 nil
+    /// 在 Windows 平台上，enumerator.skipDescendants() 方法会导致文件遍历异常中断，不仅跳过当前目录的子内容，
+    /// 还错误地影响后续同级目录的遍历。
     /// 
-    /// - Note: 此方法修复了 Windows 平台上 skipDescendants() 可能影响
-    ///         同级目录枚举的问题，其他平台保持标准行为
-    public func enumerator2(
+    /// 本方法返回改进的枚举器，可在Windows平台上正常使用。
+    /// 
+    /// - Parameters: 与enumerator相同。
+    /// - Returns: 与enumerator相同。
+    func enumerator2(
         at url: URL,
         includingPropertiesForKeys keys: [URLResourceKey]? = nil,
-        options mask: FileManager.DirectoryEnumerationOptions = []
+        options mask: FileManager.DirectoryEnumerationOptions = [],
+        errorHandler handler: ((URL, any Error) -> Bool)? = nil
     ) -> DirectoryEnumerator? {
         // 使用系统的 FileManager 创建枚举器
         guard let baseEnumerator = self.enumerator(
             at: url,
             includingPropertiesForKeys: keys,
             options: mask,
-            errorHandler: nil
+            errorHandler: handler
         ) else {
             return nil
         }
         
-        #if os(Windows)
+    #if os(Windows)
         // Windows 平台返回修复版本
         return WindowsDirectoryEnumerator(wrapping: baseEnumerator)
-        #else
+    #else
         // 其他平台返回原始实现
         return baseEnumerator
-        #endif
+    #endif
     }
 }
