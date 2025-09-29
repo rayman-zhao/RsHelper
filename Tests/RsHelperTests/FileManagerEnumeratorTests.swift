@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import RsHelper
+import RsHelper
 
 @Suite("FileManager Enumerator2 Tests")
 struct FileManagerEnumeratorTests {
