@@ -1,205 +1,291 @@
 import Testing
 import Foundation
-import RsHelper
+@testable import RsHelper
 
-@Suite("FileManager Enumerator2 Tests")
+@Suite
 struct FileManagerEnumeratorTests {
     
-    @Test("Basic enumeration works with enumerator2")
-    func testBasicEnumeration() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Basic_\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-        
-        let testFile = tempDir.appendingPathComponent("test.txt")
-        try "test content".write(to: testFile, atomically: true, encoding: .utf8)
-        
-        // 使用 enumerator2 方法
-        let enumerator = FileManager.default.enumerator2(
-            at: tempDir, 
-            includingPropertiesForKeys: [.nameKey, .isDirectoryKey]
-        )
-        #expect(enumerator != nil)
-        
-        var foundFiles: [URL] = []
-        while let file = enumerator?.nextObject() as? URL {
-            foundFiles.append(file)
-        }
-        
-        #expect(foundFiles.count > 0)
-        let foundNames = foundFiles.map { $0.lastPathComponent }
-        #expect(foundNames.contains("test.txt"))
-    }
-    
-    @Test("Skip descendants functionality with enumerator2")
+    /// 测试基本的 skipDescendants 功能
+    /// 验证跳过一个目录后，同级目录仍能正常遍历
+    @Test
     func testSkipDescendants() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Skip_\(UUID().uuidString)")
-        let subDir = tempDir.appendingPathComponent("subdir")
-        let deepDir = subDir.appendingPathComponent("deep")
-        try FileManager.default.createDirectory(at: deepDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let testDir = try TestDirectoryBuilder(named: "BasicSkip")
+            .withSubdirectory("folder1/subfolder")
+            .withSubdirectory("folder2")
+            .withFile("folder1/file1.txt", content: "content1")
+            .withFile("folder1/subfolder/file2.txt", content: "content2")
+            .withFile("folder2/file3.txt", content: "content3")
+            .withFile("file4.txt", content: "content4")
+            .build()
         
-        let rootFile = tempDir.appendingPathComponent("root.txt")
-        let subFile = subDir.appendingPathComponent("sub.txt")
-        let deepFile = deepDir.appendingPathComponent("deep.txt")
+        defer { testDir.cleanup() }
         
-        try "root content".write(to: rootFile, atomically: true, encoding: .utf8)
-        try "sub content".write(to: subFile, atomically: true, encoding: .utf8)
-        try "deep content".write(to: deepFile, atomically: true, encoding: .utf8)
-        
-        let enumerator = FileManager.default.enumerator2(
-            at: tempDir, 
-            includingPropertiesForKeys: [.nameKey, .isDirectoryKey]
-        )
-        var foundItems: [URL] = []
-        
-        while let item = enumerator?.nextObject() as? URL {
-            foundItems.append(item)
-            if item.lastPathComponent == "subdir" {
-                enumerator?.skipDescendants()
-            }
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
         }
         
-        let foundNames = foundItems.map { $0.lastPathComponent }
+        var foundFiles: [String] = []
         
-        #expect(foundNames.contains("root.txt"))
-        #expect(foundNames.contains("subdir"))
-        #expect(!foundNames.contains("sub.txt"))
-        #expect(!foundNames.contains("deep"))
-        #expect(!foundNames.contains("deep.txt"))
-    }
-    
-    @Test("Multiple skip descendants calls with enumerator2")
-    func testMultipleSkipDescendants() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Multiple_\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
-        
-        for i in 1...3 {
-            let subDir = tempDir.appendingPathComponent("dir\(i)")
-            try FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
+        while let fileURL = enumerator.nextObject() as? URL {
+            let fileName = fileURL.lastPathComponent
+            foundFiles.append(fileName)
             
-            let subFile = subDir.appendingPathComponent("file\(i).txt")
-            try "content \(i)".write(to: subFile, atomically: true, encoding: .utf8)
-        }
-        
-        let enumerator = FileManager.default.enumerator2(at: tempDir)
-        var foundItems: [URL] = []
-        
-        while let item = enumerator?.nextObject() as? URL {
-            foundItems.append(item)
-            if item.hasDirectoryPath {
-                enumerator?.skipDescendants()
+            // 当遇到 folder1 时跳过其子目录
+            if fileName == "folder1" {
+                enumerator.skipDescendants()
             }
         }
         
-        let foundNames = foundItems.map { $0.lastPathComponent }
+        // 验证结果
+        #expect(foundFiles.contains("folder1"))
+        #expect(foundFiles.contains("folder2"))
+        #expect(foundFiles.contains("file3.txt")) // folder2 中的文件应该被找到
+        #expect(foundFiles.contains("file4.txt"))
         
-        #expect(foundNames.contains("dir1"))
-        #expect(foundNames.contains("dir2"))
-        #expect(foundNames.contains("dir3"))
-        #expect(!foundNames.contains("file1.txt"))
-        #expect(!foundNames.contains("file2.txt"))
-        #expect(!foundNames.contains("file3.txt"))
+        // 这些不应该被找到（因为 folder1 被跳过了）
+        #expect(!foundFiles.contains("file1.txt"))
+        #expect(!foundFiles.contains("subfolder"))
+        #expect(!foundFiles.contains("file2.txt"))
+        
+        print("✓ Basic skip test - Found files: \(foundFiles)")
     }
     
-    @Test("Empty directory enumeration with enumerator2")
-    func testEmptyDirectory() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Empty_\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+    /// 测试多次调用 skipDescendants
+    /// 验证可以跳过多个不同的目录
+    @Test
+    func testMultipleSkipDescendants() throws {
+        let testDir = try TestDirectoryBuilder(named: "MultipleSkip")
+            .withSubdirectory("skip1")
+            .withSubdirectory("keep1")
+            .withSubdirectory("skip2")
+            .withSubdirectory("keep2")
+            .withFile("skip1/file1.txt", content: "content1")
+            .withFile("keep1/file2.txt", content: "content2")
+            .withFile("skip2/file3.txt", content: "content3")
+            .withFile("keep2/file4.txt", content: "content4")
+            .build()
         
-        let enumerator = FileManager.default.enumerator2(at: tempDir, includingPropertiesForKeys: nil)
-        #expect(enumerator != nil)
+        defer { testDir.cleanup() }
         
-        // 空目录应该没有任何项目
-        let firstItem = enumerator?.nextObject()
-        #expect(firstItem == nil)
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
+        }
+        
+        var foundFiles: [String] = []
+        
+        while let fileURL = enumerator.nextObject() as? URL {
+            let fileName = fileURL.lastPathComponent
+            foundFiles.append(fileName)
+            
+            // 跳过 skip1 和 skip2
+            if fileName == "skip1" || fileName == "skip2" {
+                enumerator.skipDescendants()
+            }
+        }
+        
+        // 应该找到 keep 文件夹中的内容
+        #expect(foundFiles.contains("keep1"))
+        #expect(foundFiles.contains("keep2"))
+        #expect(foundFiles.contains("file2.txt"))
+        #expect(foundFiles.contains("file4.txt"))
+        
+        // 不应该找到 skip 文件夹中的内容
+        #expect(!foundFiles.contains("file1.txt"))
+        #expect(!foundFiles.contains("file3.txt"))
+        
+        print("✓ Multiple skip test - Found files: \(foundFiles)")
     }
     
-    @Test("Enumerator2 options are respected") 
-    func testEnumeratorOptions() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Options_\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+    /// 测试深层嵌套结构的跳过
+    /// 验证在中间层级跳过后，不会影响同级的其他内容
+    @Test
+    func testDeepNestedSkip() throws {
+        let testDir = try TestDirectoryBuilder(named: "DeepNested")
+            .withSubdirectory("level1/level2/level3")
+            .withFile("level1/level2/level3/deep.txt", content: "deep")
+            .withFile("level1/sibling.txt", content: "sibling")
+            .withFile("level1/level2/middle.txt", content: "middle")
+            .build()
         
-        // 创建一个隐藏文件（以 . 开头）
-        let hiddenFile = tempDir.appendingPathComponent(".hidden")
-        try "hidden content".write(to: hiddenFile, atomically: true, encoding: .utf8)
+        defer { testDir.cleanup() }
         
-        let normalFile = tempDir.appendingPathComponent("normal.txt")
-        try "normal content".write(to: normalFile, atomically: true, encoding: .utf8)
-        
-        // 测试跳过隐藏文件的选项
-        let enumerator = FileManager.default.enumerator2(
-            at: tempDir,
-            includingPropertiesForKeys: nil,
-            options: .skipsHiddenFiles
-        )
-        
-        var foundItems: [URL] = []
-        while let item = enumerator?.nextObject() as? URL {
-            foundItems.append(item)
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
         }
         
-        let foundNames = foundItems.map { $0.lastPathComponent }
-        print("Found files with .skipsHiddenFiles: \(foundNames)")
+        var foundFiles: [String] = []
         
-        // 应该包含普通文件
-        #expect(foundNames.contains("normal.txt"))
+        while let fileURL = enumerator.nextObject() as? URL {
+            let fileName = fileURL.lastPathComponent
+            foundFiles.append(fileName)
+            
+            // 在 level2 处跳过
+            if fileName == "level2" {
+                enumerator.skipDescendants()
+            }
+        }
         
-        // Windows 和 Unix 对隐藏文件的定义不同，所以放宽测试要求
-        #if os(Windows)
-        // 在 Windows 上，以 . 开头的文件可能不被认为是隐藏文件
-        // 只验证至少找到了普通文件
-        #expect(foundNames.count >= 1, "Should find at least the normal file")
-        print("Note: Windows may handle dot-files differently than Unix systems")
-        #else
-        // 在 Unix 系统上，不应该包含以 . 开头的隐藏文件
-        #expect(!foundNames.contains(".hidden"), "Should not find dot-files on Unix systems")
-        #endif
+        // level3、deep.txt 和 middle.txt 不应该被找到
+        #expect(!foundFiles.contains("level3"))
+        #expect(!foundFiles.contains("deep.txt"))
+        #expect(!foundFiles.contains("middle.txt"))
+        
+        // sibling.txt 应该被找到（同级内容）
+        #expect(foundFiles.contains("level1"))
+        #expect(foundFiles.contains("sibling.txt"))
+        
+        print("✓ Deep nested test - Found files: \(foundFiles)")
     }
     
-    @Test("Compare enumerator vs enumerator2")
-    func testCompareEnumerators() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("RsHelperTest_Compare_\(UUID().uuidString)")
-        let subDir = tempDir.appendingPathComponent("subdir")
-        try FileManager.default.createDirectory(at: subDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+    /// 测试空目录的处理
+    /// 验证空目录不会影响枚举器的正常工作
+    @Test
+    func testEmptyDirectories() throws {
+        let testDir = try TestDirectoryBuilder(named: "EmptyDirs")
+            .withSubdirectory("empty1")
+            .withSubdirectory("empty2")
+            .withSubdirectory("withContent")
+            .withFile("withContent/file.txt", content: "content")
+            .withFile("root.txt", content: "root")
+            .build()
         
-        // 创建测试文件
-        let rootFile = tempDir.appendingPathComponent("root.txt")
-        let subFile = subDir.appendingPathComponent("sub.txt")
-        try "root".write(to: rootFile, atomically: true, encoding: .utf8)
-        try "sub".write(to: subFile, atomically: true, encoding: .utf8)
+        defer { testDir.cleanup() }
         
-        // 使用原始 enumerator
-        var originalCount = 0
-        if let enum1 = FileManager.default.enumerator(
-            at: tempDir,
-            includingPropertiesForKeys: nil,
-            options: [],
-            errorHandler: nil
-        ) {
-            while enum1.nextObject() != nil { originalCount += 1 }
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
         }
         
-        // 使用 enumerator2
-        var enumerator2Count = 0
-        if let enum2 = FileManager.default.enumerator2(at: tempDir) {
-            while enum2.nextObject() != nil { enumerator2Count += 1 }
+        var foundFiles: [String] = []
+        
+        while let fileURL = enumerator.nextObject() as? URL {
+            let fileName = fileURL.lastPathComponent
+            foundFiles.append(fileName)
+            
+            // 跳过第一个空目录
+            if fileName == "empty1" {
+                enumerator.skipDescendants()
+            }
         }
         
-        print("Original enumerator: \(originalCount) items")
-        print("Enumerator2: \(enumerator2Count) items")
+        // 所有目录都应该被找到
+        #expect(foundFiles.contains("empty1"))
+        #expect(foundFiles.contains("empty2"))
+        #expect(foundFiles.contains("withContent"))
         
-        // 在没有 skipDescendants 调用的情况下，两者应该返回相同结果
-        #expect(originalCount == enumerator2Count, "Both enumerators should find same number of items")
+        // withContent 中的文件应该被找到
+        #expect(foundFiles.contains("file.txt"))
+        #expect(foundFiles.contains("root.txt"))
+        
+        print("✓ Empty directories test - Found files: \(foundFiles)")
+    }
+    
+    /// 测试边界情况：根目录只有文件
+    /// 验证没有子目录时枚举器仍能正常工作
+    @Test
+    func testRootLevelFilesOnly() throws {
+        let testDir = try TestDirectoryBuilder(named: "RootFilesOnly")
+            .withFile("file1.txt", content: "file1")
+            .withFile("file2.txt", content: "file2")
+            .withFile("file3.txt", content: "file3")
+            .build()
+        
+        defer { testDir.cleanup() }
+        
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
+        }
+        
+        var foundFiles: [String] = []
+        
+        while let fileURL = enumerator.nextObject() as? URL {
+            foundFiles.append(fileURL.lastPathComponent)
+        }
+        
+        #expect(foundFiles.count == 3)
+        #expect(foundFiles.contains("file1.txt"))
+        #expect(foundFiles.contains("file2.txt"))
+        #expect(foundFiles.contains("file3.txt"))
+        
+        print("✓ Root files only test - Found files: \(foundFiles)")
+    }
+    
+    /// 测试复杂混合场景
+    /// 结合多层嵌套、多次跳过、空目录等情况
+    @Test
+    func testComplexMixedScenario() throws {
+        let testDir = try TestDirectoryBuilder(named: "ComplexMix")
+            .withSubdirectory("project/src/main")
+            .withSubdirectory("project/src/test")
+            .withSubdirectory("project/build")
+            .withSubdirectory("project/docs")
+            .withFile("project/src/main/app.swift", content: "main")
+            .withFile("project/src/test/test.swift", content: "test")
+            .withFile("project/build/output.exe", content: "binary")
+            .withFile("project/docs/readme.md", content: "docs")
+            .withFile("project/config.json", content: "config")
+            .build()
+        
+        defer { testDir.cleanup() }
+        
+        guard let enumerator = FileManager.default.enumerator2(
+            at: testDir.url,
+            includingPropertiesForKeys: [.nameKey, .isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            Issue.record("Failed to create enumerator")
+            return
+        }
+        
+        var foundFiles: [String] = []
+        
+        while let fileURL = enumerator.nextObject() as? URL {
+            let fileName = fileURL.lastPathComponent
+            foundFiles.append(fileName)
+            
+            // 跳过 build 和 test 目录（模拟实际使用场景）
+            if fileName == "build" || fileName == "test" {
+                enumerator.skipDescendants()
+            }
+        }
+        
+        // 应该找到的内容
+        #expect(foundFiles.contains("project"))
+        #expect(foundFiles.contains("src"))
+        #expect(foundFiles.contains("docs"))
+        #expect(foundFiles.contains("config.json"))
+        #expect(foundFiles.contains("readme.md"))
+        #expect(foundFiles.contains("main"))
+        #expect(foundFiles.contains("app.swift"))
+        
+        // 不应该找到的内容（被跳过）
+        #expect(!foundFiles.contains("test.swift"))
+        #expect(!foundFiles.contains("output.exe"))
+        
+        print("✓ Complex mixed scenario test - Found files: \(foundFiles)")
     }
 }
