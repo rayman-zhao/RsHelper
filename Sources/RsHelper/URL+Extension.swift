@@ -6,6 +6,11 @@ public extension URL {
         let rv = try? resourceValues(forKeys: [.fileSizeKey])
         return rv?.fileSize ?? -1
     }
+
+    /// Simplified reachability check.
+    var reachable: Bool {
+        return (try? checkResourceIsReachable()) ?? false
+    }
     
     /// Get the URL of a child file in a directory
     /// 
@@ -17,7 +22,7 @@ public extension URL {
         guard self.hasDirectoryPath else { return nil }
 
         let url = self.appending(component: child)
-        return ((try? url.checkResourceIsReachable()) ?? false) ? url : nil
+        return url.reachable ? url : nil
     }
     
     /// Get the URL of a sibling file in same directory
@@ -28,7 +33,7 @@ public extension URL {
         guard self.hasDirectoryPath == false else { return nil }
         
         let url = self.deletingLastPathComponent().appending(component: sibling)
-        return ((try? url.checkResourceIsReachable()) ?? false) ? url : nil
+        return url.reachable ? url : nil
     }
 
 #if os(Windows)
