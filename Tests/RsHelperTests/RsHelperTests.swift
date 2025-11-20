@@ -52,6 +52,9 @@ func url() async throws {
 
     let url2 = Bundle.module.resourceURL?.reachableChild(named: "test2.txt")
     #expect(url2 != nil)
+
+    let dir = URL.applicationSupportDirectory
+    #expect(try dir.checkResourceIsReachable())
 }
 
 @Test

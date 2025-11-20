@@ -30,4 +30,18 @@ public extension URL {
         let url = self.deletingLastPathComponent().appending(component: sibling)
         return ((try? url.checkResourceIsReachable()) ?? false) ? url : nil
     }
+
+#if os(Windows)
+    /// Stadard directory as macOS
+    static var applicationSupportDirectory: URL {
+         guard let appSupportDir = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            fatalError("Can't find applicationSupportDirectory with FileManager")
+        }
+        
+        return appSupportDir
+    }
+#endif
 }
