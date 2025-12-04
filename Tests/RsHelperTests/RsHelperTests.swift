@@ -42,6 +42,33 @@ func logger() async throws {
     log.error("Hello World")
 }
 
+#if os(Windows)
+@Suite
+struct LocalizedString {
+    @Test(arguments: [
+        ("hello", "Hello", "你好"),
+        ("interpolation", "Interpolation %@ as string", "插值 %@ 字符串"),
+        ("multiple interpolations", "Interpolation %lld as int, and %@ as string", "插值 %lld 整数，以及 %@ 字符串"),
+    ])
+    func localize(_ key: String, _ eng: String, _ chn: String) async throws {
+        let en = Locale(identifier: "en")
+        let cn = Locale(identifier: "zh-Hans")
+
+        #expect(String(localized: key, table: "test", bundle: Bundle.module, locale: en) == eng)
+        #expect(String(localized: key, table: "test", bundle: Bundle.module, locale: cn) == chn)
+    }
+
+    @Test
+    func localize2() async throws {
+        let en = Locale(identifier: "en")
+        let cn = Locale(identifier: "zh-Hans")
+
+        #expect(String(localized: "world", bundle: Bundle.module, locale: en) == "World")
+        #expect(String(localized: "world", bundle: Bundle.module, locale: cn) == "世界")
+    }
+}
+#endif
+
 @Test
 func url() async throws {
     let test_txt = Bundle.module.path(forResource: "test.txt")!
