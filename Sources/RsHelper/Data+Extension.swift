@@ -46,8 +46,8 @@ public extension Data {
     /// A boolean value indicating whether the buffer is JPEG data.
     var isJPEG: Bool {
         let cnt = self.count
-        return cnt > 4
-            && self[0] == 0xFF && self[1] == 0xD8
+        return cnt > 6
+            && self[0] == 0xFF && self[1] == 0xD8 && self[2] == 0xFF && self[3] == 0xE0
             && self[cnt - 2] == 0xFF && self.last == 0xD9
 
     }
