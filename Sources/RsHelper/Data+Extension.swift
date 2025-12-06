@@ -47,7 +47,8 @@ public extension Data {
     var isJPEG: Bool {
         let cnt = self.count
         return cnt > 6
-            && self[0] == 0xFF && self[1] == 0xD8 && self[2] == 0xFF && self[3] == 0xE0
+            && self[0] == 0xFF && self[1] == 0xD8 && self[2] == 0xFF
+            && (self[3] == 0xE0 || self[3] == 0xE1 || self[3] == 0xDB)
             && self[cnt - 2] == 0xFF && self.last == 0xD9
 
     }
