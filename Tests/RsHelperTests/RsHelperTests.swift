@@ -82,6 +82,15 @@ func url() async throws {
 
     let dir = URL.applicationSupportDirectory
     #expect(try dir.checkResourceIsReachable())
+
+    let dir2 = dir.reachingChild(named: "A/B/C")
+    #expect(dir2?.reachable ?? false == false)
+    let dir3 = dir.reachingChild(named: "A/B/C/")
+    #expect(dir3?.reachable ?? false)
+    
+    try? FileManager.default.removeItem(at: dir3!)
+    try? FileManager.default.removeItem(at: dir.reachingChild(named: "A/B")!)
+    try? FileManager.default.removeItem(at: dir.reachingChild(named: "A/")!)
 }
 
 @Test

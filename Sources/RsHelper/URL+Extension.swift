@@ -33,7 +33,7 @@ public extension URL {
         guard self.hasDirectoryPath else { return nil }
 
         let url = self.appending(path: child)
-        let dir = url.deletingLastPathComponent()
+        let dir = url.hasDirectoryPath ? url : url.deletingLastPathComponent()
         if !dir.reachable {
             do {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
