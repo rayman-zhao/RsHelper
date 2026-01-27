@@ -24,6 +24,26 @@ public extension URL {
         let url = self.appending(component: child)
         return url.reachable ? url : nil
     }
+
+    /// Get the URL of a child in subfolders of a directory.
+    /// 
+    /// - Parameter child: The path to the child like f1/f2/child.ext
+    /// - Returns: Child URL, or nil if can't make it in the directory.
+    func reachingChild(named child: String) -> URL? {
+        guard self.hasDirectoryPath else { return nil }
+
+        let url = self.appending(path: child)
+        let dir = url.deletingLastPathComponent()
+        if !dir.reachable {
+            do {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            } catch {
+                return nil
+            }
+        }
+
+        return url
+    }
     
     /// Get the URL of a sibling file in same directory
     /// 

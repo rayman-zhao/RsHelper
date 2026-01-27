@@ -73,14 +73,11 @@ public struct JsonPreferences : Preferences {
 
     /// Factory method to make standard application preference file
     public static func makeAppStandard(group: String, product: String, name: String = "app") -> Preferences {
-        let dir = URL.applicationSupportDirectory
-            .appending(path: group, directoryHint: .isDirectory)
-            .appending(path: product, directoryHint: .isDirectory)
-
-        if !dir.reachable {
-            try! FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let fn = "\(group)/\(product)/\(name).json"
+        guard let pref = URL.applicationSupportDirectory.reachingChild(named: fn) else {
+            fatalError("Can't reach preference file at \(fn)")
         }
 
-        return JsonPreferences(jsonFile: dir.appending(path: "\(name).json"))
+        return JsonPreferences(jsonFile: pref)
     }
 }
