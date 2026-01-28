@@ -61,7 +61,7 @@ public struct JsonPreferences : Preferences {
 
         if let fileData = try? Data(contentsOf: jsonFile),
             let existingObj = try? JSONSerialization.jsonObject(with: fileData) as? [String: Any] {
-                log.info("Load existing \(existingObj.count) preferences")
+                //log.info("Load existing \(existingObj.count) preferences")
                 jsonObj = existingObj
         }
 
