@@ -20,6 +20,23 @@ struct TestPref2 : Preferable {
     var key2: Int = 999
 }
 
+enum Theme: String, RawValuePreferable {
+    case dark
+    case light
+
+    public init() {
+        self = .light
+    }
+}
+
+enum Theme2: String, RawValuePreferable {
+    case auto
+
+    public init() {
+        self = .auto
+    }
+}
+
 func defaultPref(_ pref: Preferences) {
     let t = pref.load(for: TestPref.self)
     #expect(t.key1 == "value1")
@@ -82,7 +99,9 @@ struct PreferencesTests {
         let pref = JsonPreferences.makeAppStandard(group: "SwiftWorks", product: "Ruslan", name: "temp4")
         let content = """
         {
-            "TestPref": {"key1": "123", "key2": 777, "theme": "auto"}
+            "TestPref": {"key1": "123", "key2": 777, "theme": "auto"},
+            "Theme":{"value":"dark"},
+            "Theme2":{"value":"dark"}
         }
         """
         let url = URL.applicationSupportDirectory.appending(path: "/SwiftWorks/Ruslan/temp4.json")
@@ -94,6 +113,12 @@ struct PreferencesTests {
         let testPref = pref.load(for: TestPref.self)
         #expect(testPref.key1 == "123")
         #expect(testPref.key2 == 777)
+
+        let theme = pref.load(for: Theme.self)
+        #expect(theme == .dark)
+
+        let theme2 = pref.load(for: Theme2.self)
+        #expect(theme2 == .auto)
     }
 
     @Test
@@ -109,6 +134,9 @@ struct PreferencesTests {
         let test2 = pref.load(for: TestPref.self)
         #expect(test2.key1 == "abcd")
         #expect(test2.key2 == 666)
+
+        let theme: Theme  = .dark
+        pref.save(theme)
     }
 
     @Test

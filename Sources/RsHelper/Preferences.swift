@@ -8,6 +8,29 @@ public protocol ExpressibleByEmptyLiteral {
 /// Protocol can be saved/loaded in a file
 public typealias Preferable = Codable & ExpressibleByEmptyLiteral
 
+/// Protocol for enum types saved/loaded by their raw value
+public protocol RawValuePreferable: RawRepresentable, Preferable {}
+
+fileprivate enum RawValueCodingKey: String, CodingKey {
+    case value
+}
+
+public extension RawValuePreferable where RawValue: Codable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: RawValueCodingKey.self)
+        try container.encode(self.rawValue, forKey: .value)
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: RawValueCodingKey.self)
+        let rawValue = try container.decode(RawValue.self, forKey: .value)
+        guard let instance = Self(rawValue: rawValue) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid \(Self.self) value: \(rawValue)"))
+        }
+        self = instance
+    }
+}
+
 /// Preferences file protocol
 public protocol Preferences {
     func load<T: Preferable>(for preferableType: T.Type) -> T
