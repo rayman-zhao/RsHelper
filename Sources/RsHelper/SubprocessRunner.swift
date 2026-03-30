@@ -33,9 +33,7 @@ public class SubprocessRunner {
                 preferredBufferSize: 1 
             ) { exec, input, stdout, stderr in
                 for try await message in merge(stdout.lines(), stderr.lines()) {
-                    await MainActor.run() {
-                        outputHandler(message.trimmingCharacters(in: newLineAndQuotes))
-                    }
+                    outputHandler(message.trimmingCharacters(in: newLineAndQuotes))
                 }
             }
         }
