@@ -19,7 +19,7 @@ public class SubprocessRunner {
     public init() {
     }
 
-    public func start(exe: String, args: [String], pwd: String) {
+    public func start(exe: String, args: [String], pwd: String, outputHandler: @escaping @Sendable (String) -> Void = { (_) in }) {
         log.info("Starting \(exe)")
         log.info("with \(args.joined(separator: " "))")
         log.info("in \(pwd)")
@@ -33,7 +33,9 @@ public class SubprocessRunner {
                 preferredBufferSize: 1 
             ) { exec, input, stdout, stderr in
                 for try await message in merge(stdout.lines(), stderr.lines()) {
-                    print("\(message.trimmingCharacters(in: newLineAndQuotes))")
+                    await MainActor.run() {
+                        outputHandler(message.trimmingCharacters(in: newLineAndQuotes))
+                    }
                 }
             }
         }

@@ -8,7 +8,9 @@ func testStartStop() async throws {
     runner.start(
         exe: "C:/Windows/System32/ping.exe",
         args: ["127.0.0.1", "-t"],
-        pwd: "")
+        pwd: "") {
+            print("output: \($0)")
+        }
     try? await Task.sleep(for: .seconds(3))
     runner.stop()
 
