@@ -1,6 +1,6 @@
 import Foundation
-
 #if os(Windows)
+import WinSDK
 
 extension String {
     static private let lock = NSLock()
@@ -53,6 +53,10 @@ extension String {
         }
 
         self = v.replacing(String.interpolationParameters, with: "") // Ignore parameter, use format instead.
+    }
+
+    public var wideString: [WCHAR] {
+        self.utf16 + [0]
     }
 }
 
