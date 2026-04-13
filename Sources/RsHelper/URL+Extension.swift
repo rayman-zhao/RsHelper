@@ -72,6 +72,21 @@ public extension URL {
         return rv?.fileSize ?? -1
     }
 
+    /// The file path of the URL.
+    /// 
+    /// On Windows, the deprecated URL.path has not sufix "/" for directories, and URL.path() has unnecessary prefix "/".
+    var filePath: String {
+        var p = self.path(percentEncoded: false)
+
+        #if os(Windows)
+            if p.hasPrefix("/") {
+                p.removeFirst()
+            }
+        #endif
+
+        return p
+    }
+
     /// Simplified reachability check.
     var reachable: Bool {
         return (try? checkResourceIsReachable()) ?? false

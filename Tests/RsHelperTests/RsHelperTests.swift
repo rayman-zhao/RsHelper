@@ -74,6 +74,7 @@ func url() async throws {
     let test_txt = Bundle.module.path(forResource: "test.txt")!
     let url = URL(filePath: test_txt)
     #expect(url.fileSize == 0)
+    #expect(url.filePath == test_txt)
     #expect(url.reachableSibling(named: "test2.txt") != nil)
     #expect(url.reachableSibling(named: "test2.txt")?.fileSize == 0)
 
@@ -81,6 +82,7 @@ func url() async throws {
     #expect(url2 != nil)
 
     let dir = URL.applicationSupportDirectory
+    #expect(dir.filePath.hasSuffix("/") && !dir.filePath.hasPrefix("/"))
     #expect(try dir.checkResourceIsReachable())
 
     let dir2 = dir.reachingChild(named: "A/B/C")
