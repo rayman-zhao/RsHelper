@@ -55,6 +55,13 @@ extension String {
         self = v.replacing(String.interpolationParameters, with: "") // Ignore parameter, use format instead.
     }
 
+    public init(utf16Data: Data) {
+        let codes = utf16Data.withUnsafeBytes { buf in
+            return Array(buf.bindMemory(to: UInt16.self))
+        }
+        self = String(utf16CodeUnits: codes, count: codes.count) // Have to do this, since String(encoding:utf16) can't work on Winodws.
+    }
+
     public var wideString: [WCHAR] {
         self.utf16 + [0]
     }

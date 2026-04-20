@@ -26,10 +26,7 @@ public extension XMLDocument {
         try self.init(data: utf16Data, options: options)
     #else
         guard !utf16Data.isEmpty else { throw XMLParser.ErrorCode.emptyDocumentError } // Empty data will crash on Windows even with try.
-        let codes = utf16Data.withUnsafeBytes { buf in
-            return Array(buf.bindMemory(to: UInt16.self))
-        }
-        let str = String(utf16CodeUnits: codes, count: codes.count) // Have to do this, since String(encoding:utf16) can't work on Winodws.
+        let str = String(utf16Data: utf16Data)
         let xml = str.replacing("<?xml version=\"1.0\" encoding=\"unicode\" ?>", with: "<?xml version=\"1.0\" encoding=\"utf-8\" ?>")
         try self.init(xmlString: xml, options: options)
     #endif
